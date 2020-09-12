@@ -1,7 +1,9 @@
 #include "portio.h"
 #include "memory/pmm.h"
+#include "memory/vmm.h"
 #include "interrupts/idt.h"
 #include "interrupts/isr.h"
+#include "text_terminal/terminal.h"
 #include "stivale.h"
 
 char * itoa( int value, char * str, int base )
@@ -52,6 +54,8 @@ void write_string( int colour, const char *string )
     }
 }
 
+
+
 void kmain(stivale_info_t *info)
 {
 	init_serial();
@@ -59,31 +63,27 @@ void kmain(stivale_info_t *info)
 	isr_init();
 	idt_init();
 
-	int *a = (int*)pmm_alloc(0x1000);
-	int *b = (int*)pmm_alloc(0x1000*10);
-	int *c = (int*)pmm_alloc(0x1000);
+	char number[50];
 
 
-	char number[10];
-	itoa(a, number, 10);
+	mmap_entry_t *mmap = (void *) info->memory_map_addr;
+	for (uint64_t i = 1; i < info->memory_map_entries; i++) {
+		if (mmap[i].type == 10) {
+			serial_print("found kernel!!!!!!!\n");
+			itoa(mmap[i].addr, number, 10);
+			serial_print(number);
+			serial_print("\n");
+			itoa(mmap[i].len, number, 10);
+			serial_print("len = ");
+			serial_print(number);
+			serial_print("\n");
 
-	serial_print("a = ");
-	serial_print(number);
-	serial_print("\n");
+		}
+	}
 
-	itoa(b, number, 10);
-
-	serial_print("b = ");
-	serial_print(number);
-	serial_print("\n");
-
-	itoa(c, number, 10);
-
-	serial_print("c = ");
-	serial_print(number);
-	serial_print("\n");
-
-
-	write_string(2, "hoi siieeee");
-
+	init_terminal();
+	for (size_t i = 41; i < 100; i++)
+		putc(i);
+		putc('\n');
+	init_vmm();
 }

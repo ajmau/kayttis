@@ -6,7 +6,7 @@
 uint64_t memory_pages;
 uint64_t *bitmap;
 
-char * itoa2( int value, char * str, int base )
+char * itoa3( int value, char * str, int base )
 {
     char * rc;
     char * ptr;
@@ -142,31 +142,53 @@ uint64_t pmm_find_free_pages(uint64_t size)
 	}
 }
 
+const uint16_t digits[] = {
+    u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9', u'a', u'b', u'c', u'd', u'e', u'f'
+};
+
+void printHexDigit(uint32_t n) {
+    char buffer[9];
+    char *p = buffer;
+
+    for (int i = 7; i >= 0; --i) {
+   uint8_t nibble = (n & (0xf << (i*4))) >> (i*4);
+   *p++ = digits[nibble];
+    }
+    *p = 0;
+    serial_print(buffer);
+    serial_print("\n");
+}
+
 uint64_t *pmm_alloc(uint64_t size)
 {
 	uint64_t needed_pages = (size + 0x1000 - 1) / 0x1000;
 	uint64_t free_page = pmm_find_free_pages(size);
 
-	char asd[10];
-	itoa2(free_page, asd, 10);
-	serial_print("free_page = ");
-	serial_print(asd);
-	serial_print("\n");
-
-	itoa2(needed_pages, asd, 10);
-	serial_print("needed_pages = ");
-	serial_print(asd);
-	serial_print("\n");
-
 	for (uint64_t i = 0; i < needed_pages; i++) {
 		pmm_set_page_used(free_page + i);
 	}
+
+	serial_print("address = ");
+	printHexDigit((uint32_t)bitmap+free_page);
+	
+
 	return (uint64_t*)bitmap+free_page;
 }
 
-void pmm_unalloc(void *addr, uint64_t size)
+void pmm_unalloc(uint64_t *addr, uint64_t size)
 {
-	uint64_t page = (uint64_t) addr / 0x1000;
+	char number[50];
+
+	itoa(*(uint64_t*)addr, number, 10);
+	serial_print("addr = ");
+	serial_print(number);
+	serial_print("\n");
+
+	itoa(bitmap, number, 10);
+	serial_print("bitmap = ");
+	serial_print(number);
+	serial_print("\n");
+	uint64_t page = (uint64_t) *(uint64_t*)addr / 0x1000;
 	uint64_t pages = (size + 0x1000 - 1) / 0x1000;
 
 	for (uint64_t i = 0; i < pages; i++) {
